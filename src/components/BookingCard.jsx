@@ -1,17 +1,42 @@
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setEditingBooking, deleteBooking } from '../features/bookingSlice';
+import {
+  setEditingBooking,
+  deleteBookingFromFirestore,
+  fetchBookings,
+} from '../features/bookingSlice';
 
 export default function BookingCard() {
-  const bookings = useSelector((state) => state.booking.bookings);
   const dispatch = useDispatch();
+  const bookings = useSelector((state) => state.booking.bookings);
+  const status = useSelector((state) => state.booking.status);
+
+  useEffect(() => {
+    const unsubscribePromise = dispatch(fetchBookings());
+    return () => {
+      unsubscribePromise.then((unsubscribe) => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      });
+    };
+  }, [dispatch]);
 
   const handleEdit = (id) => {
     dispatch(setEditingBooking(id));
   };
 
   const handleDelete = (id) => {
-    dispatch(deleteBooking(id));
+    dispatch(deleteBookingFromFirestore(id));
   };
+
+  if (status === 'loading') {
+    return <div>Loading bookings...</div>;
+  }
+
+  if (status === 'failed') {
+    return <div>Error loading bookings. Please try again.</div>;
+  }
 
   return (
     <div>
