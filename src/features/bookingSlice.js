@@ -6,6 +6,7 @@ import {
   onSnapshot,
   deleteDoc,
   doc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -37,6 +38,18 @@ export const deleteBookingFromFirestore = createAsyncThunk(
   async (bookingId, { dispatch }) => {
     await deleteDoc(doc(db, 'bookings', bookingId));
     dispatch(deleteBooking(bookingId));
+  }
+);
+
+// Add this new thunk for updating a booking
+export const updateBookingInFirestore = createAsyncThunk(
+  'booking/updateBookingInFirestore',
+  async (bookingData, { dispatch }) => {
+    const { id, ...updatedFields } = bookingData;
+    const bookingRef = doc(db, 'bookings', id);
+    await updateDoc(bookingRef, updatedFields);
+    dispatch(updateBooking({ id, ...updatedFields }));
+    return { id, ...updatedFields };
   }
 );
 
@@ -91,6 +104,16 @@ const bookingSlice = createSlice({
     setBookings(state, action) {
       state.bookings = action.payload;
     },
+    updateBooking(state, action) {
+      const index = state.bookings.findIndex(
+        (booking) => booking.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.bookings[index] = { ...state.bookings[index], ...action.payload };
+      }
+      state.bookingData = initialState.bookingData;
+      state.currentEditingId = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -112,6 +135,13 @@ const bookingSlice = createSlice({
       .addCase(submitBooking.rejected, (state, action) => {
         state.status = 'failed';
         console.error('Failed to submit booking:', action.error);
+      })
+      .addCase(updateBookingInFirestore.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+      })
+      .addCase(updateBookingInFirestore.rejected, (state, action) => {
+        state.status = 'failed';
+        console.error('Failed to update booking:', action.error);
       });
   },
 });
@@ -123,6 +153,7 @@ export const {
   resetBookingForm,
   deleteBooking,
   setBookings,
+  updateBooking,
 } = bookingSlice.actions;
 
 export default bookingSlice.reducer;

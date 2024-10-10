@@ -1,8 +1,9 @@
 import { useDispatch, useSelector } from 'react-redux';
 import {
   updateBookingField,
-  addBooking,
   submitBooking,
+  updateBookingInFirestore,
+  resetBookingForm,
 } from '../features/bookingSlice';
 
 export default function BookingForm() {
@@ -22,10 +23,13 @@ export default function BookingForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (currentEditingId) {
-      dispatch(addBooking(bookingData));
+      await dispatch(
+        updateBookingInFirestore({ ...bookingData, id: currentEditingId })
+      );
     } else {
       await dispatch(submitBooking());
     }
+    dispatch(resetBookingForm());
   };
 
   return (
